@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.anthropic.com/claude-code/settings-schema.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(tsx:*)",
+      "Bash(prisma:*)",
+      "Bash(turbo:*)",
+      "Bash(nest:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull)",
+      "Bash(git push)",
+      "Bash(git remote:*)",
+      "Bash(git tag:*)",
+      "Bash(git restore:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(pwd)",
+      "Bash(which:*)",
+      "Bash(env)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f :*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(rm -r /*)",
+      "Bash(sudo:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"==> Session started on branch: $(git branch --show-current 2>/dev/null || echo 'no-git'). Read CLAUDE.md + docs/PLAN.md for next task. Default model: Sonnet. Cost: $75/day soft, $100/day hard.\""
+          }
+        ]
+      }
+    ]
+  }
+}
