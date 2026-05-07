@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: starter
     region: oregon
-    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @repo/api build
+    buildCommand: pnpm install --frozen-lockfile --filter=@repo/api... && pnpm --filter @repo/api build
     startCommand: node apps/api/dist/main
     envVars:
       - key: NODE_ENV
