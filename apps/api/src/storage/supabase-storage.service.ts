@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { env } from '../common/env';
 import { ExternalAPIError } from '../common/errors';
 
@@ -11,7 +12,11 @@ export class SupabaseStorageService {
   constructor(
     @InjectPinoLogger(SupabaseStorageService.name) private readonly logger: PinoLogger,
   ) {
-    this.client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+    // Pass ws as the WebSocket transport so this works on Node.js < 22.
+    // The API only uses Supabase for Storage — Realtime stays on the browser side.
+    this.client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+      realtime: { transport: WebSocket as unknown as typeof globalThis.WebSocket },
+    });
   }
 
   async upload(bucket: string, path: string, buffer: Buffer, contentType: string): Promise<string> {
