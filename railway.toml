@@ -1,5 +1,5 @@
 [build]
-buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @repo/api build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @repo/db build && pnpm --filter @repo/api build"
 
 [deploy]
 startCommand = "node apps/api/dist/main"
