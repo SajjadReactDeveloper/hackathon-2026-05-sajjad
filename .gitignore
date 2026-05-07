@@ -43,3 +43,5 @@ coverage
 
 # Sentry
 .sentryclirc
+
+.vercel
