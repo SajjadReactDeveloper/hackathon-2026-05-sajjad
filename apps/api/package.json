@@ -30,7 +30,6 @@
     "@repo/db": "workspace:*",
     "@repo/types": "workspace:*",
     "@sentry/node": "^10.51.0",
-    "@sentry/profiling-node": "^10.51.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",
     "@types/multer": "^2.1.0",
