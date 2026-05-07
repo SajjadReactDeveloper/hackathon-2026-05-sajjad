@@ -1,0 +1,23 @@
+export const C = {
+  primary:       '#22c55e',
+  primaryDark:   '#16a34a',
+  primaryLight:  'rgba(34,197,94,0.12)',
+  bg:            '#f8fafc',
+  card:          '#ffffff',
+  border:        '#e2e8f0',
+  borderLight:   '#f1f5f9',
+  text:          '#0f172a',
+  textSub:       '#64748b',
+  textMuted:     '#94a3b8',
+  danger:        '#dc2626',
+  dangerLight:   'rgba(239,68,68,0.1)',
+  warning:       '#d97706',
+  warningLight:  'rgba(245,158,11,0.1)',
+  info:          '#0891b2',
+  infoLight:     'rgba(6,182,212,0.1)',
+  // bubble colours
+  bubbleOut:     '#22c55e',
+  bubbleIn:      '#f1f5f9',
+  bubbleOutText: '#ffffff',
+  bubbleInText:  '#0f172a',
+} as const;
