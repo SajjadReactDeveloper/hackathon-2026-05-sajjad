@@ -89,6 +89,18 @@ pnpm --filter api test:e2e                     # NestJS supertest e2e
 git push origin main                           # → Vercel + Render auto-deploy
 ```
 
+## QA — mandatory after every feature or bug fix
+
+After writing or changing any code that is observable in a browser:
+
+1. **Verify HTTP behaviour first** — `curl` every new route/redirect/guard before claiming it works.
+2. **Check the page renders** — use `preview_screenshot` (or curl the HTML) to confirm the page actually loads, not just 200s.
+3. **Check the golden path end-to-end** — for auth: login → dashboard. For forms: fill → submit → result. Don't stop at "it compiles".
+4. **Check UI/UX explicitly** — font colours visible on all backgrounds (especially dark mode), placeholder text visible, buttons clickable, error states render, mobile viewport not broken.
+5. **Fix every issue found before reporting done.** Never hand back a "here's what I did" without having run the checks above yourself.
+
+Note on the preview tool: the built-in preview server runs from `C:\Users\DESKTOP-SAJJAD\Desktop` (the Claude cwd) and will always launch the `Buzz-App-POC` on port 3000. Our app runs on whatever port Next.js picks (3000 if free, otherwise 3001+). Start it via `cd apps/web && pnpm dev` and verify via `curl` + HTML inspection. Do NOT spend more than 2 attempts trying to make the preview tool work — fall back to curl.
+
 ## Things to NEVER do
 
 - Never write SQL strings outside a `*Service` method using Prisma `$queryRaw` (parameter-bound). No string concatenation.

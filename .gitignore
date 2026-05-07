@@ -1,0 +1,45 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build outputs
+dist
+.next
+out
+build
+
+# turbo
+.turbo
+
+# env files — never commit real secrets
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editors
+.vscode
+.idea
+*.swp
+*.swo
+
+# Prisma generated (keep schema, ignore generated client if local)
+packages/db/node_modules
+
+# test coverage
+coverage
+
+# Sentry
+.sentryclirc

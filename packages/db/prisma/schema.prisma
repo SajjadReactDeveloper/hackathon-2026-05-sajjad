@@ -1,0 +1,472 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector", schema: "extensions")]
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum WorkspaceMemberRole {
+  owner
+  admin
+  member
+
+  @@map("workspace_member_role")
+}
+
+enum VoiceCloneStatus {
+  none
+  training
+  ready
+
+  @@map("voice_clone_status")
+}
+
+enum ConversationStatus {
+  open
+  snoozed
+  resolved
+
+  @@map("conversation_status")
+}
+
+enum MessageDirection {
+  inbound
+  outbound
+
+  @@map("message_direction")
+}
+
+enum MessageType {
+  text
+  audio
+  image
+  video
+  document
+  sticker
+  location
+  interactive
+  button
+  order
+  system
+  unknown
+
+  @@map("message_type")
+}
+
+enum MessageStatus {
+  sent
+  delivered
+  read
+  failed
+
+  @@map("message_status")
+}
+
+enum DetectedLanguage {
+  urdu
+  english
+  roman_urdu
+  unknown
+
+  @@map("detected_language")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  returned
+
+  @@map("order_status")
+}
+
+enum OrderCreatedVia {
+  manual
+  voice_note
+  image
+  ai_parser
+  flow
+
+  @@map("order_created_via")
+}
+
+enum KbDocumentStatus {
+  processing
+  ready
+  failed
+
+  @@map("kb_document_status")
+}
+
+enum AutoRuleMatchScope {
+  text
+  transcription
+  any
+
+  @@map("auto_rule_match_scope")
+}
+
+enum AutoRuleAction {
+  send_text
+  tag_contact
+  skip_ai
+
+  @@map("auto_rule_action")
+}
+
+enum LostSaleStatus {
+  not_lost
+  pending_analysis
+  analyzed
+  recovered
+
+  @@map("lost_sale_status")
+}
+
+enum TtsProvider {
+  openai
+  elevenlabs
+
+  @@map("tts_provider")
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model Workspace {
+  id                  String           @id @default(uuid()) @db.Uuid
+  name                String
+  phoneNumberId       String?
+  wabaId              String?
+  timezone            String           @default("Asia/Karachi")
+  locale              String           @default("ur-PK")
+  onboardingCompleted Boolean          @default(false)
+  accessTokenEnc      String?
+  voiceCloneStatus    VoiceCloneStatus @default(none)
+  voiceCloneId        String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  members       WorkspaceMember[]
+  contacts      Contact[]
+  conversations Conversation[]
+  messages      Message[]
+  orders        Order[]
+  products      Product[]
+  kbDocuments   KbDocument[]
+  kbChunks      KbChunk[]
+  autoRules     AutoRule[]
+  flows         Flow[]
+  aiConfig      AIConfig?
+  auditEvents   AuditEvent[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  supabaseUserId String   @unique
+  email          String
+  fullName       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspaces  WorkspaceMember[]
+  auditEvents AuditEvent[]
+
+  @@map("users")
+}
+
+model WorkspaceMember {
+  workspaceId String                @db.Uuid
+  userId      String                @db.Uuid
+  role        WorkspaceMemberRole   @default(member)
+  createdAt   DateTime              @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model Contact {
+  id               String   @id @default(uuid()) @db.Uuid
+  workspaceId      String   @db.Uuid
+  waPhone          String
+  displayName      String?
+  profileName      String?
+  tags             String[] @default([])
+  lastSeenAt       DateTime?
+  lifetimeValueCents BigInt  @default(0)
+  orderCount       Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  facts         ContactFact[]
+  conversations Conversation[]
+  messages      Message[]
+  orders        Order[]
+
+  @@unique([workspaceId, waPhone])
+  @@index([workspaceId])
+  @@map("contacts")
+}
+
+model ContactFact {
+  id              String   @id @default(uuid()) @db.Uuid
+  workspaceId     String   @db.Uuid
+  contactId       String   @db.Uuid
+  factType        String
+  value           String
+  confidence      Float    @default(1.0)
+  sourceMessageId String?  @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([contactId, factType])
+  @@map("contact_facts")
+}
+
+model Conversation {
+  id                  String             @id @default(uuid()) @db.Uuid
+  workspaceId         String             @db.Uuid
+  contactId           String             @db.Uuid
+  status              ConversationStatus @default(open)
+  assignedUserId      String?            @db.Uuid
+  lastMessageAt       DateTime?
+  lastMessagePreview  String?
+  unreadCount         Int                @default(0)
+  aiEnabled           Boolean            @default(true)
+  lostSaleStatus      LostSaleStatus     @default(not_lost)
+  lostSaleReason      String?
+  lostSaleSuggestion  String?
+  lostSaleAnalyzedAt  DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  orders    Order[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id               String           @id @default(uuid()) @db.Uuid
+  workspaceId      String           @db.Uuid
+  conversationId   String           @db.Uuid
+  contactId        String           @db.Uuid
+  direction        MessageDirection
+  waMessageId      String           @unique
+  type             MessageType      @default(text)
+  textBody         String?
+  mediaUrl         String?
+  mediaMimeType    String?
+  transcription    String?
+  detectedLanguage DetectedLanguage @default(unknown)
+  aiGenerated      Boolean          @default(false)
+  aiModel          String?
+  aiLatencyMs      Int?
+  toolCallsTrace   Json?
+  status           MessageStatus    @default(sent)
+  error            String?
+  rawPayload       Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model Order {
+  id               String          @id @default(uuid()) @db.Uuid
+  workspaceId      String          @db.Uuid
+  contactId        String          @db.Uuid
+  conversationId   String?         @db.Uuid
+  sourceMessageId  String?         @db.Uuid
+  orderNumber      String
+  status           OrderStatus     @default(pending)
+  totalCents       BigInt          @default(0)
+  currency         String          @default("PKR")
+  deliveryAddress  String?
+  notes            String?
+  createdVia       OrderCreatedVia @default(manual)
+  fraudScore       Int             @default(0)
+  fraudSignals     Json            @default("[]")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact      Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  items        OrderItem[]
+
+  @@unique([workspaceId, orderNumber])
+  @@index([workspaceId])
+  @@index([workspaceId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String @id @default(uuid()) @db.Uuid
+  workspaceId    String @db.Uuid
+  orderId        String @db.Uuid
+  productId      String? @db.Uuid
+  name           String
+  quantity       Int
+  unitPriceCents BigInt
+  lineTotalCents BigInt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  sku         String
+  name        String
+  description String?
+  imageUrl    String?
+  priceCents  BigInt
+  stock       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, sku])
+  @@index([workspaceId])
+  @@map("products")
+}
+
+model KbDocument {
+  id          String          @id @default(uuid()) @db.Uuid
+  workspaceId String          @db.Uuid
+  name        String
+  sourceUrl   String
+  pageCount   Int             @default(0)
+  status      KbDocumentStatus @default(processing)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chunks    KbChunk[]
+
+  @@index([workspaceId])
+  @@map("kb_documents")
+}
+
+model KbChunk {
+  id          String                      @id @default(uuid()) @db.Uuid
+  workspaceId String                      @db.Uuid
+  documentId  String                      @db.Uuid
+  chunkIndex  Int
+  content     String
+  embedding   Unsupported("vector(1536)")?
+  createdAt   DateTime                    @default(now())
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  document  KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("kb_chunks")
+}
+
+model AutoRule {
+  id             String             @id @default(uuid()) @db.Uuid
+  workspaceId    String             @db.Uuid
+  name           String
+  triggerPattern String
+  matchScope     AutoRuleMatchScope @default(text)
+  replyTemplate  String?
+  action         AutoRuleAction     @default(send_text)
+  enabled        Boolean            @default(true)
+  priority       Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, enabled, priority])
+  @@map("auto_rules")
+}
+
+model Flow {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  name        String
+  description String?
+  graph       Json     @default("{}")
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("flows")
+}
+
+model AIConfig {
+  id                  String      @id @default(uuid()) @db.Uuid
+  workspaceId         String      @unique @db.Uuid
+  systemPromptOverride String?
+  model               String      @default("llama-3.3-70b-versatile")
+  autoReplyEnabled    Boolean     @default(true)
+  businessHours       Json        @default("{\"enabled\":false,\"start\":\"09:00\",\"end\":\"21:00\",\"timezone\":\"Asia/Karachi\"}")
+  ttsEnabled          Boolean     @default(true)
+  ttsProvider         TtsProvider @default(openai)
+  ttsVoice            String      @default("alloy")
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("ai_configs")
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  userId      String?  @db.Uuid
+  action      String
+  entityType  String?
+  entityId    String?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@map("audit_events")
+}
