@@ -46,7 +46,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       <View style={bar.separator} />
 
       <View style={bar.row}>
-        {state.routes.map((route, index) => {
+        {state.routes.map((route: { key: string; name: string }, index: number) => {
           const { options } = descriptors[route.key] ?? {};
           const focused = state.index === index;
           const config = TAB_ICONS[route.name] ?? { label: route.name, emoji: '•' };
