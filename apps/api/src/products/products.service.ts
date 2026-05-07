@@ -96,6 +96,22 @@ export class ProductsService {
     return this.prisma.product.findUnique({ where: { id } }) as Promise<Product>;
   }
 
+  async search(workspaceId: string, query: string, limit = 5): Promise<Product[]> {
+    return this.prisma.product.findMany({
+      where: {
+        workspaceId,
+        active: true,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { sku: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async delete(workspaceId: string, id: string): Promise<void> {
     const deleted = await this.prisma.product.deleteMany({ where: { id, workspaceId } });
     if (deleted.count === 0) throw new NotFoundError('Product', id);

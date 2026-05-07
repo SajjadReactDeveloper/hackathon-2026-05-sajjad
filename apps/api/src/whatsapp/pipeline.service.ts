@@ -9,6 +9,7 @@ import { VoiceParserService } from '../ai/voice-parser.service';
 import { VoiceReplyService } from '../ai/voice-reply.service';
 import { ImageOrderService } from '../ai/image-order.service';
 import { OrdersService } from '../orders/orders.service';
+import { ProductsService } from '../products/products.service';
 import { RulesService } from '../rules/rules.service';
 import { MemoryService } from '../memory/memory.service';
 import { WhatsAppService } from './whatsapp.service';
@@ -39,6 +40,7 @@ export class PipelineService {
     private readonly voiceReply: VoiceReplyService,
     private readonly imageOrder: ImageOrderService,
     private readonly orders: OrdersService,
+    private readonly products: ProductsService,
     private readonly rules: RulesService,
     private readonly memory: MemoryService,
     private readonly whatsapp: WhatsAppService,
@@ -346,6 +348,31 @@ export class PipelineService {
       });
 
       await this.conversations.updateLastMessage(conversation.id, confirmText);
+
+      // Product image matching: search catalog for items similar to what the customer photographed
+      // and send back matching product cards with prices
+      if (workspace.phoneNumberId && parsed.items.length > 0) {
+        const seen = new Set<string>();
+        for (const item of parsed.items.slice(0, 3)) {
+          try {
+            const matches = await this.products.search(workspace.id, item.name, 2);
+            for (const product of matches) {
+              if (seen.has(product.id) || !product.imageUrl) continue;
+              seen.add(product.id);
+              const priceLabel = `${product.name} — Rs. ${Math.round(Number(product.priceCents) / 100).toLocaleString()} | Stock: ${product.stock}`;
+              await this.whatsapp.sendImage(
+                workspace.phoneNumberId,
+                accessToken,
+                event.from,
+                product.imageUrl,
+                priceLabel,
+              );
+            }
+          } catch (matchErr) {
+            this.logger.warn({ matchErr, itemName: item.name }, 'Product match send failed');
+          }
+        }
+      }
 
       this.logger.info(
         { workspaceId: workspace.id, orderId: order.id, orderNumber: order.orderNumber },

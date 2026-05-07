@@ -17,6 +17,7 @@ import { RulesModule } from './rules/rules.module';
 import { KbModule } from './kb/kb.module';
 import { LostSalesModule } from './lost-sales/lost-sales.module';
 import { FlowsModule } from './flows/flows.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
@@ -50,6 +51,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     KbModule,
     LostSalesModule,
     FlowsModule,
+    ChatbotModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

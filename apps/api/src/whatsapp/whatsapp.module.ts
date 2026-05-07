@@ -8,10 +8,11 @@ import { MessagesModule } from '../messages/messages.module';
 import { AIModule } from '../ai/ai.module';
 import { MemoryModule } from '../memory/memory.module';
 import { OrdersModule } from '../orders/orders.module';
+import { ProductsModule } from '../products/products.module';
 import { RulesModule } from '../rules/rules.module';
 
 @Module({
-  imports: [ContactsModule, ConversationsModule, forwardRef(() => MessagesModule), AIModule, MemoryModule, OrdersModule, RulesModule],
+  imports: [ContactsModule, ConversationsModule, forwardRef(() => MessagesModule), AIModule, MemoryModule, OrdersModule, ProductsModule, RulesModule],
   controllers: [WebhookController],
   providers: [WhatsAppService, PipelineService],
   exports: [WhatsAppService],
