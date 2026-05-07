@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: flowchat-api
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @repo/db prisma generate && pnpm --filter api build
+    startCommand: node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET_TTS
+        value: tts
+      - key: SUPABASE_STORAGE_BUCKET_KB
+        value: kb
+      - key: SUPABASE_STORAGE_BUCKET_PRODUCTS
+        value: products
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_TOKEN_ENC_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
